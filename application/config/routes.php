@@ -54,4 +54,8 @@ $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
 $route['home'] = 'index';
-$route['api/v1/init']['POST'] = 'api/Wallet/createAccount';
+
+$route['auth/decode'] = 'auth/decodeToken';
+
+$route['api/v1/init']['POST'] = 'wallet/createAccount';
+$route['api/v1/wallet']['POST'] = 'wallet/enableWallet';
