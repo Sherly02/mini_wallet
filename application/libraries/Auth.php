@@ -21,7 +21,7 @@ class Auth {
             return $content;
         }
 
-        return $content[0];
+        return (array)$content[0];
     }
 
     public function decodeToken($token)
@@ -29,7 +29,7 @@ class Auth {
         $jwt = new JWT();
         $jwtSecretKey = 'SecretKeyJWT';
         $decodedToken = $jwt->decode($token, $jwtSecretKey, false);
-        return $decodedToken;
+        return (array)$decodedToken;
     }
 
 }
