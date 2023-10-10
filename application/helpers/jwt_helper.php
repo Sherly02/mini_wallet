@@ -31,23 +31,29 @@ class JWT
 	public static function decode($jwt, $key = null, $verify = true)
 	{
 		$tks = explode('.', $jwt);
+		$invalidTokenMsg = 'Invalid token: ';
 		if (count($tks) != 3) {
-			throw new UnexpectedValueException('Wrong number of segments');
+			$payload['error'] = $invalidTokenMsg . 'Wrong number of segments';
+			return $payload;
 		}
 		list($headb64, $bodyb64, $cryptob64) = $tks;
 		if (null === ($header = JWT::jsonDecode(JWT::urlsafeB64Decode($headb64)))) {
-			throw new UnexpectedValueException('Invalid segment encoding');
+			$payload['error'] = $invalidTokenMsg . 'Invalid segment encoding';
+			return $payload;
 		}
 		if (null === $payload = JWT::jsonDecode(JWT::urlsafeB64Decode($bodyb64))) {
-			throw new UnexpectedValueException('Invalid segment encoding');
+			$payload['error'] = $invalidTokenMsg . 'Invalid segment encoding';
+			return $payload;
 		}
 		$sig = JWT::urlsafeB64Decode($cryptob64);
 		if ($verify) {
 			if (empty($header->alg)) {
-				throw new DomainException('Empty algorithm');
+				$payload['error'] = $invalidTokenMsg . 'Empty algorithm';
+				return $payload;
 			}
 			if ($sig != JWT::sign("$headb64.$bodyb64", $key, $header->alg)) {
-				throw new UnexpectedValueException('Signature verification failed');
+				$payload['error'] = $invalidTokenMsg . 'Signature verification failed';
+				return $payload;
 			}
 		}
 		return $payload;

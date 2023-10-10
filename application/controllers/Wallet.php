@@ -42,9 +42,10 @@ class Wallet extends REST_Controller {
     {
         $headerToken = $this->input->get_request_header('Authorization');
         $data = $this->auth->getTokenContent($headerToken);
-        $result = [];
+        $isValidToken = $this->isValidToken($data);
+        $result = $this->generateResponseBody(0, $data);
 
-        if (!empty($data) && (isset($data['id']) && isset($data['customer_xid']))) {
+        if ($isValidToken) {
             $isFound = $this->WalletModel->checkAccount($data);
 
             if (!$isFound) {
@@ -56,6 +57,19 @@ class Wallet extends REST_Controller {
         }
 
         return $this->response($result, $this->statusCode);
+    }
+
+    private function isValidToken($data)
+    {
+        if (!empty($data)) {
+            if (isset($data['error'])) {
+                return false;
+            }
+            if (isset($data['id']) && isset($data['customer_xid'])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function responseEnabled($data)

@@ -15,7 +15,13 @@ class Auth {
     public function getTokenContent($token)
     {
         $token = explode(' ', $token)[1];
-        return (array)$this->decodeToken($token)[0];
+        $content = (array)$this->decodeToken($token);
+
+        if (isset($content['error'])) {
+            return $content;
+        }
+
+        return $content[0];
     }
 
     public function decodeToken($token)
