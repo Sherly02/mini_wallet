@@ -59,3 +59,5 @@ $route['auth/decode'] = 'auth/decodeToken';
 
 $route['api/v1/init']['POST'] = 'wallet/createAccount';
 $route['api/v1/wallet']['POST'] = 'wallet/enableWallet';
+$route['api/v1/wallet']['PATCH'] = 'wallet/disableWallet';
+$route['api/v1/wallet']['GET'] = 'wallet/viewWallet';
