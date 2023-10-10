@@ -40,19 +40,38 @@ class Wallet extends REST_Controller {
 
     public function enableWallet()
     {
-        $headerToken = $this->input->get_request_header('Authorization');
-        $data = $this->auth->getTokenContent($headerToken);
-        $isValidToken = $this->isValidToken($data);
-        $result = $this->generateResponseBody(0, $data);
+        $detailToken = $this->getTokenDetail();
+        $result = $detailToken['result'];
 
-        if ($isValidToken) {
+        if ($detailToken['is_valid_token']) {
+            $data = $detailToken['data'];
             $isFound = $this->WalletModel->checkAccount($data);
 
             if (!$isFound) {
                 $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
             } else {
-                $this->WalletModel->updateWalletStatus($data['id'], $data['customer_xid'], 1);
+                $this->WalletModel->updateWalletStatus($data['id'], $data['customer_xid']);
                 $result = $this->responseEnabled($data);
+            }
+        }
+
+        return $this->response($result, $this->statusCode);
+    }
+
+    public function disableWallet()
+    {
+        $detailToken = $this->getTokenDetail();
+        $result = $detailToken['result'];
+
+        if ($detailToken['is_valid_token']) {
+            $data = $detailToken['data'];
+            $isFound = $this->WalletModel->checkAccount($data);
+
+            if (!$isFound) {
+                $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
+            } else {
+                $this->WalletModel->updateWalletStatus($data['id'], $data['customer_xid'], false);
+                $result = $this->responseDisabled($data);
             }
         }
 
@@ -72,6 +91,15 @@ class Wallet extends REST_Controller {
         return false;
     }
 
+    private function getTokenDetail()
+    {
+        $data['header_token'] = $this->input->get_request_header('Authorization');
+        $data['data'] = $this->auth->getTokenContent($data['header_token']);
+        $data['is_valid_token'] = $this->isValidToken($data['data']);
+        $data['result'] = $this->generateResponseBody(0, $data['data']);
+        return $data;
+    }
+
     private function responseEnabled($data)
     {
         $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
@@ -84,6 +112,28 @@ class Wallet extends REST_Controller {
                     'owned_by' => $accountDetail['owned_by'],
                     'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
                     'enabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['enabled_at'])),
+                    'balance' => $accountDetail['balance']
+                ]
+            ]);
+        } else {
+            $result = $this->resultAccountNotFound();
+        }
+
+        return $result;
+    }
+
+    private function responseDisabled($data)
+    {
+        $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
+        
+        if (!empty($accountDetail)) {
+            $this->statusCode = 200;
+            $result = $this->generateResponseBody(1, [
+                    'wallet' => [
+                    'id' => $accountDetail['id'],
+                    'owned_by' => $accountDetail['owned_by'],
+                    'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
+                    'disabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['disabled_at'])),
                     'balance' => $accountDetail['balance']
                 ]
             ]);

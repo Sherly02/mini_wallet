@@ -32,6 +32,7 @@ class WalletModel extends CI_Model
             'owned_by',
             'status',
             'enabled_at',
+            'disabled_at',
             'balance'
         ];
         
@@ -51,12 +52,12 @@ class WalletModel extends CI_Model
         return !empty($this->db->get('m_account')->result_array()) ? true : false;
     }
 
-    public function updateWalletStatus($id, $cxid, $isEnable = 1)
+    public function updateWalletStatus($id, $cxid, $isEnable = true)
     {
         $data = [
             'status' => $isEnable,
-            'enabled_at' => $isEnable === 1 ? date('Y-m-d H:i:s') : null,
-            'disabled_at' => $isEnable !== 1 ? date('Y-m-d H:i:s') : null
+            'enabled_at' => $isEnable === true ? date('Y-m-d H:i:s') : null,
+            'disabled_at' => $isEnable !== true ? date('Y-m-d H:i:s') : null
         ];
 
         $this->db->where('id', $id)
