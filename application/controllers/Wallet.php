@@ -1,12 +1,13 @@
 <?php
-require(APPPATH.'/libraries/REST_Controller.php');
+require(APPPATH . '/libraries/REST_Controller.php');
 
 use LDAP\Result;
 use Ramsey\Uuid\Uuid;
 
-class Wallet extends REST_Controller {
+class Wallet extends REST_Controller
+{
     private $statusCode = 400;
-    
+
     public function __construct()
     {
         parent::__construct();
@@ -15,11 +16,11 @@ class Wallet extends REST_Controller {
         $this->load->database();
     }
 
-	public function index()
-	{
+    public function index()
+    {
         echo 'Welcome to Mini Wallet API';
         echo '<p>' . $this->generateUuid() . '</p>';
-	}
+    }
 
     public function createAccount()
     {
@@ -42,17 +43,9 @@ class Wallet extends REST_Controller {
     {
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
-
+    
         if ($detailToken['is_valid_token']) {
-            $data = $detailToken['data'];
-            $isFound = $this->WalletModel->checkAccount($data);
-
-            if (!$isFound) {
-                $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
-            } else {
-                $this->WalletModel->updateWalletStatus($data['id'], $data['customer_xid']);
-                $result = $this->responseEnabled($data);
-            }
+            $result = $this->updateStatusWallet($detailToken['data']);
         }
 
         return $this->response($result, $this->statusCode);
@@ -64,18 +57,52 @@ class Wallet extends REST_Controller {
         $result = $detailToken['result'];
 
         if ($detailToken['is_valid_token']) {
+            $result = $this->updateStatusWallet($detailToken['data'], false);
+        }
+
+        return $this->response($result, $this->statusCode);
+    }
+
+    private function updateStatusWallet($data, $isEnabled = true)
+    {
+        $isFound = $this->WalletModel->checkAccount($data);
+
+        if (!$isFound) {
+            $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
+        } else {
+            $this->WalletModel->updateWalletStatus($data['id'], $data['customer_xid'], $isEnabled);
+            $result = $this->responseStatusWallet($data, $isEnabled);
+        }
+        return $result;
+    }
+
+    public function viewWallet()
+    {
+        $detailToken = $this->getTokenDetail();
+        $result = $detailToken['result'];
+
+        if ($detailToken['is_valid_token']) {
+            $result = $this->checkStatus($detailToken['data']);
             $data = $detailToken['data'];
             $isFound = $this->WalletModel->checkAccount($data);
 
-            if (!$isFound) {
+            if ($isFound && $result === true) {
+                $result = $this->responseStatusWallet($data);
+            } else if ($result === true) {
                 $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
-            } else {
-                $this->WalletModel->updateWalletStatus($data['id'], $data['customer_xid'], false);
-                $result = $this->responseDisabled($data);
             }
         }
 
         return $this->response($result, $this->statusCode);
+    }
+
+    private function checkStatus($data)
+    {
+        $isEnabled = $this->WalletModel->getAccountStatus($data);
+        if (!$isEnabled) {
+            return $this->generateResponseBody(0, ['error' => 'wallet disabled!']);
+        }
+        return true;
     }
 
     private function isValidToken($data)
@@ -100,21 +127,30 @@ class Wallet extends REST_Controller {
         return $data;
     }
 
-    private function responseEnabled($data)
+    private function responseStatusWallet($data, $isEnabled = true)
     {
         $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
-        
+
         if (!empty($accountDetail)) {
             $this->statusCode = 200;
-            $result = $this->generateResponseBody(1, [
-                    'wallet' => [
-                    'id' => $accountDetail['id'],
-                    'owned_by' => $accountDetail['owned_by'],
-                    'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
-                    'enabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['enabled_at'])),
-                    'balance' => $accountDetail['balance']
-                ]
-            ]);
+            $data = [
+                'id' => $accountDetail['id'],
+                'owned_by' => $accountDetail['owned_by'],
+                'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
+                'enabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['enabled_at'])),
+                'disabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['disabled_at'])),
+                'balance' => $accountDetail['balance']
+            ];
+
+            switch ($isEnabled) {
+                case false:
+                    unset($data['enabled_at']);
+                    break;
+                default:
+                    unset($data['disabled_at']);
+            }
+
+            $result = $this->generateResponseBody(1, ['wallet' => $data]);
         } else {
             $result = $this->resultAccountNotFound();
         }
@@ -125,11 +161,11 @@ class Wallet extends REST_Controller {
     private function responseDisabled($data)
     {
         $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
-        
+
         if (!empty($accountDetail)) {
             $this->statusCode = 200;
             $result = $this->generateResponseBody(1, [
-                    'wallet' => [
+                'wallet' => [
                     'id' => $accountDetail['id'],
                     'owned_by' => $accountDetail['owned_by'],
                     'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
@@ -177,7 +213,7 @@ class Wallet extends REST_Controller {
         $uuid = Uuid::uuid4();
         return $uuid->toString();
     }
-    
+
     private function generateResponseBody($status = 0, $data = [])
     {
         return [

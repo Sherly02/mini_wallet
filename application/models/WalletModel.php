@@ -71,6 +71,17 @@ class WalletModel extends CI_Model
         return false;
     }
 
+    public function getAccountStatus($data)
+    {
+        $this->db->select('status')
+                ->where('id', $data['id'])
+                ->where('owned_by', $data['customer_xid']);
+        
+        $data = (array)$this->db->get('m_account')->row();
+
+        return $data['status'] == 1 ? true : false;
+    }
+
     public function assertCreateAccount($uuid, $cxid)
     {
         return [
