@@ -1,17 +1,15 @@
 <?php
 require(APPPATH . '/libraries/REST_Controller.php');
 
-use LDAP\Result;
-use Ramsey\Uuid\Uuid;
-
 class Wallet extends REST_Controller
 {
     private $statusCode = 400;
+    private $payload = [];
 
     public function __construct()
     {
         parent::__construct();
-        $this->load->library('auth');
+        $this->load->library(['auth', 'uuidlib']);
         $this->load->model('WalletModel');
         $this->load->database();
     }
@@ -19,7 +17,7 @@ class Wallet extends REST_Controller
     public function index()
     {
         echo 'Welcome to Mini Wallet API';
-        echo '<p>' . $this->generateUuid() . '</p>';
+        echo '<p>' . $this->uuidlib->generateUuid() . '</p>';
     }
 
     public function createAccount()
@@ -43,7 +41,7 @@ class Wallet extends REST_Controller
     {
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
-    
+
         if ($detailToken['is_valid_token']) {
             $result = $this->updateStatusWallet($detailToken['data']);
         }
@@ -96,10 +94,176 @@ class Wallet extends REST_Controller
         return $this->response($result, $this->statusCode);
     }
 
+    public function deposit()
+    {
+        $detailToken = $this->getTokenDetail();
+        $result = $detailToken['result'];
+
+        if ($detailToken['is_valid_token']) {
+            $result = $this->checkStatus($detailToken['data']);
+            $data = $detailToken['data'];
+            $isFound = $this->WalletModel->checkAccount($data);
+
+            if ($isFound && $result === true) {
+                $result = $this->processDeposit($data);
+            } else if ($result === true) {
+                $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
+            }
+        }
+
+        return $this->response($result, $this->statusCode);
+    }
+
+    public function withdrawal()
+    {
+        $detailToken = $this->getTokenDetail();
+        $result = $detailToken['result'];
+
+        if ($detailToken['is_valid_token']) {
+            $result = $this->checkStatus($detailToken['data']);
+            $data = $detailToken['data'];
+            $isFound = $this->WalletModel->checkAccount($data);
+
+            if ($isFound && $result === true) {
+                $result = $this->processWithdrawal($data);
+            } else if ($result === true) {
+                $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
+            }
+        }
+
+        return $this->response($result, $this->statusCode);
+    }
+
+    public function getHistory()
+    {
+        $detailToken = $this->getTokenDetail();
+        $result = $detailToken['result'];
+
+        if ($detailToken['is_valid_token']) {
+            $result = $this->checkStatus($detailToken['data']);
+            $data = $detailToken['data'];
+            $isFound = $this->WalletModel->checkAccount($data);
+
+            if ($isFound && $result === true) {
+                $result = $this->getTransactionHistory($data);
+            } else if ($result === true) {
+                $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
+            }
+        }
+
+        return $this->response($result, $this->statusCode);
+    }
+
+    private function getTransactionHistory($data)
+    {
+        $data = $this->WalletModel->getHistory($data);
+        $this->statusCode = 200;
+        return $this->generateResponseBody(1, ['transaction' => $data]);
+    }
+
+    private function processWithdrawal($data)
+    {
+        $result = $this->checkPayload();
+
+        if ($result === true) {
+            $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
+            $accountDetail = $this->assertTransaction($accountDetail, 'withdrawal');
+
+            if ($this->WalletModel->isReferenceIdExist($accountDetail['reference_id'], 'withdraw') == false) {
+                if ($accountDetail['balance'] >= 0) {
+                    $withdrawalId = $this->WalletModel->withdrawal($accountDetail, $data);
+                    $this->statusCode = 200;
+                    return $this->generateResponseBody(1, [
+                        'withdrawal' => $this->responseWithdrawal($data, $withdrawalId)
+                    ]);
+                }
+                return $this->generateResponseBody(0, ['error' => 'insufficient balance!']);
+            }
+            return $this->generateResponseBody(0, ['error' => 'reference id was ever used!']);
+        }
+
+        return $result;
+    }
+
+    private function processDeposit($data)
+    {
+        $result = $this->checkPayload();
+
+        if ($result === true) {
+            $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
+            $accountDetail = $this->assertTransaction($accountDetail);
+
+            if ($this->WalletModel->isReferenceIdExist($accountDetail['reference_id'], 'deposit') == false) {
+                $depositId = $this->WalletModel->deposit($accountDetail, $data);
+                $this->statusCode = 200;
+                return $this->generateResponseBody(1, ['deposit' => $this->responseDeposit($data, $depositId)]);
+            }
+            return $this->generateResponseBody(0, ['error' => 'reference id was ever used!']);
+        }
+        return $result;
+    }
+
+    private function responseDeposit($data, $depositId)
+    {
+        $depositData = $this->WalletModel->getDepositById($data, $depositId);
+        $depositData['status'] = $depositData['status'] == 1 ? 'success' : 'failed';
+        $depositData['deposited_at'] = date(FORMAT_DATE, strtotime($depositData['deposited_at']));
+        return $depositData;
+    }
+
+    private function responseWithdrawal($data, $withdrawalId)
+    {
+        $withdrawData = $this->WalletModel->getWithdrawalById($data, $withdrawalId);
+        $withdrawData['status'] = $withdrawData['status'] == 1 ? 'success' : 'failed';
+        $withdrawData['withdrawn_at'] = date(FORMAT_DATE, strtotime($withdrawData['withdrawn_at']));
+        return $withdrawData;
+    }
+
+    private function assertTransaction($data, $type = 'deposit')
+    {
+        $totalBalance = $data['balance'];
+        $amount = $this->input->post('amount');
+        $id = $this->uuidlib->generateUuid();
+        unset($data['balance']);
+
+        $data = array_merge([
+            'id_trx' => $this->uuidlib->generateUuid(),
+            'amount' => $amount,
+            'reference_id' => $this->input->post('reference_id')
+        ], $data);
+
+        switch ($type) {
+            case 'withdrawal':
+                $totalBalance = $totalBalance - $amount;
+                $data['id_withdrawal'] = $id;
+                break;
+            default:
+                $totalBalance = $totalBalance + $amount;
+                $data['id_deposit'] = $id;
+        }
+        $data['balance'] = $totalBalance;
+
+        return $data;
+    }
+
+    private function checkPayload()
+    {
+        $logError = [];
+        $this->input->post('amount') ?? array_push($logError, 'Insert amount!');
+        $this->input->post('reference_id') ?? array_push($logError, 'Insert reference id!');
+
+        if (!empty($logError)) {
+            return $this->generateResponseBody(0, ['error' => $logError]);
+        }
+
+        return true;
+    }
+
     private function checkStatus($data)
     {
         $isEnabled = $this->WalletModel->getAccountStatus($data);
         if (!$isEnabled) {
+            $this->statusCode = 404;
             return $this->generateResponseBody(0, ['error' => 'wallet disabled!']);
         }
         return true;
@@ -137,8 +301,8 @@ class Wallet extends REST_Controller
                 'id' => $accountDetail['id'],
                 'owned_by' => $accountDetail['owned_by'],
                 'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
-                'enabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['enabled_at'])),
-                'disabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['disabled_at'])),
+                'enabled_at' => date(FORMAT_DATE, strtotime($accountDetail['enabled_at'])),
+                'disabled_at' => date(FORMAT_DATE, strtotime($accountDetail['disabled_at'])),
                 'balance' => $accountDetail['balance']
             ];
 
@@ -151,28 +315,6 @@ class Wallet extends REST_Controller
             }
 
             $result = $this->generateResponseBody(1, ['wallet' => $data]);
-        } else {
-            $result = $this->resultAccountNotFound();
-        }
-
-        return $result;
-    }
-
-    private function responseDisabled($data)
-    {
-        $accountDetail = $this->WalletModel->getAccount($data['id'], $data['customer_xid']);
-
-        if (!empty($accountDetail)) {
-            $this->statusCode = 200;
-            $result = $this->generateResponseBody(1, [
-                'wallet' => [
-                    'id' => $accountDetail['id'],
-                    'owned_by' => $accountDetail['owned_by'],
-                    'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
-                    'disabled_at' => date('Y-m-d\TH:i:sO', strtotime($accountDetail['disabled_at'])),
-                    'balance' => $accountDetail['balance']
-                ]
-            ]);
         } else {
             $result = $this->resultAccountNotFound();
         }
@@ -195,7 +337,7 @@ class Wallet extends REST_Controller
 
     private function processNewAccount($cxid)
     {
-        $data = $this->WalletModel->assertCreateAccount($this->generateUuid(), $cxid);
+        $data = $this->WalletModel->assertCreateAccount($this->uuidlib->generateUuid(), $cxid);
         $isInserted = $this->WalletModel->saveAccount($data);
 
         $token = $this->auth->getToken($data);
@@ -206,12 +348,6 @@ class Wallet extends REST_Controller
             $this->statusCode = 201;
             return $this->generateResponseBody(1, ['token' => $token]);
         }
-    }
-
-    private function generateUuid()
-    {
-        $uuid = Uuid::uuid4();
-        return $uuid->toString();
     }
 
     private function generateResponseBody($status = 0, $data = [])
