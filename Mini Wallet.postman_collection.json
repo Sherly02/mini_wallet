@@ -1,0 +1,263 @@
+{
+	"info": {
+		"_postman_id": "f6d02cf2-9158-4e8a-a1b3-461b1fc43429",
+		"name": "Mini Wallet",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "7572612"
+	},
+	"item": [
+		{
+			"name": "Initialize Account",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "customer_xid",
+							"value": "ea0212d3-abd6-406f-8c67-868e814a2436",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/init",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"init"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Enable Wallet",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.W3siaWQiOiI2YmJmMmM5MS0zYWJhLTQyNjMtOTZhZC02NTVlZDA1YWY0ODciLCJjdXN0b21lcl94aWQiOiI2NGZjZjFhMS02MjljLTRmMTYtOTIzNy05NzYzMTNhMTJmNGMifV0.mMVmsA0hrLR5BjSlw2CovM1Q4LI_5O_PIM9UVYXtdsk",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "",
+							"value": "",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/wallet",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"wallet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Disable Wallet",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.W3siaWQiOiI2YmJmMmM5MS0zYWJhLTQyNjMtOTZhZC02NTVlZDA1YWY0ODciLCJjdXN0b21lcl94aWQiOiI2NGZjZjFhMS02MjljLTRmMTYtOTIzNy05NzYzMTNhMTJmNGMifV0.mMVmsA0hrLR5BjSlw2CovM1Q4LI_5O_PIM9UVYXtdsk",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "is_disabled",
+							"value": "true",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/wallet",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"wallet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View Wallet",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.W3siaWQiOiIyNDA3Y2RmOC03YmY5LTRmOTktYjlhZi1mN2VmZTFjNmJiM2MiLCJjdXN0b21lcl94aWQiOiJlYTAyMTJkMy1hYmQ2LTQwNmYtOGM2Ny04NjhlODE0YTI0MzYifV0.CaiKy-W67sjQKlpAhGJon5wOoslgLXAPCV9x9LJ1x00",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/wallet",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"wallet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Virtual Money (Deposit)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.W3siaWQiOiI2YmJmMmM5MS0zYWJhLTQyNjMtOTZhZC02NTVlZDA1YWY0ODciLCJjdXN0b21lcl94aWQiOiI2NGZjZjFhMS02MjljLTRmMTYtOTIzNy05NzYzMTNhMTJmNGMifV0.mMVmsA0hrLR5BjSlw2CovM1Q4LI_5O_PIM9UVYXtdsk",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "amount",
+							"value": "5000",
+							"type": "text"
+						},
+						{
+							"key": "reference_id",
+							"value": "683ad0e2-cce6-4487-a0ed-ac2ef6fe2d22",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/wallet/deposits",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"wallet",
+						"deposits"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View Transaction",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.W3siaWQiOiI2YmJmMmM5MS0zYWJhLTQyNjMtOTZhZC02NTVlZDA1YWY0ODciLCJjdXN0b21lcl94aWQiOiI2NGZjZjFhMS02MjljLTRmMTYtOTIzNy05NzYzMTNhMTJmNGMifV0.mMVmsA0hrLR5BjSlw2CovM1Q4LI_5O_PIM9UVYXtdsk",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/wallet/transactions",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"wallet",
+						"transactions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Use Virtual Money (Withdraw)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.W3siaWQiOiI2YmJmMmM5MS0zYWJhLTQyNjMtOTZhZC02NTVlZDA1YWY0ODciLCJjdXN0b21lcl94aWQiOiI2NGZjZjFhMS02MjljLTRmMTYtOTIzNy05NzYzMTNhMTJmNGMifV0.mMVmsA0hrLR5BjSlw2CovM1Q4LI_5O_PIM9UVYXtdsk",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "amount",
+							"value": "10000",
+							"type": "text"
+						},
+						{
+							"key": "reference_id",
+							"value": "27225e03-ec28-4b54-b690-d6d0c5f7f537",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/wallet/withdrawals",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"wallet",
+						"withdrawals"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
