@@ -9,7 +9,7 @@ class Wallet extends REST_Controller
     public function __construct()
     {
         parent::__construct();
-        $this->load->library(['auth', 'uuidlib']);
+        $this->load->library(['auth', 'uuidLib']);
         $this->load->model('WalletModel');
         $this->load->database();
     }
@@ -23,10 +23,9 @@ class Wallet extends REST_Controller
     public function createAccount()
     {
         $result = $this->generateResponseBody(0, ['error' => 'insert customer xid!']);
-
         if ($this->input->post('customer_xid')) {
             $existingData = $this->WalletModel->isCxidExist($this->input->post('customer_xid'));
-
+            
             if (!empty($existingData)) {
                 $result = $this->getExistingToken($existingData);
             } else {
@@ -105,7 +104,11 @@ class Wallet extends REST_Controller
             $isFound = $this->WalletModel->checkAccount($data);
 
             if ($isFound && $result === true) {
-                $result = $this->processDeposit($data);
+                if ($this->isValidAmount() == true) {
+                    $result = $this->processDeposit($data);
+                } else {
+                    $result = $this->generateResponseBody(0, ['error' => 'invalid amount!']);
+                }
             } else if ($result === true) {
                 $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
             }
@@ -125,13 +128,22 @@ class Wallet extends REST_Controller
             $isFound = $this->WalletModel->checkAccount($data);
 
             if ($isFound && $result === true) {
-                $result = $this->processWithdrawal($data);
+                if ($this->isValidAmount() == true) {
+                    $result = $this->processWithdrawal($data);
+                } else {
+                    $result = $this->generateResponseBody(0, ['error' => 'invalid amount!']);
+                }
             } else if ($result === true) {
                 $result = $this->generateResponseBody(0, ['error' => 'invalid token!']);
             }
         }
 
         return $this->response($result, $this->statusCode);
+    }
+
+    private function isValidAmount()
+    {
+        return (int)$this->input->post('amount') < 0 ? false : true;
     }
 
     public function getHistory()
@@ -174,7 +186,7 @@ class Wallet extends REST_Controller
                     $withdrawalId = $this->WalletModel->withdrawal($accountDetail, $data);
                     $this->statusCode = 200;
                     return $this->generateResponseBody(1, [
-                        'withdrawal' => $this->responseWithdrawal($data, $withdrawalId)
+                        'withdrawal' => $this->responseWithdrawal($accountDetail, $withdrawalId)
                     ]);
                 }
                 return $this->generateResponseBody(0, ['error' => 'insufficient balance!']);
@@ -196,7 +208,7 @@ class Wallet extends REST_Controller
             if ($this->WalletModel->isReferenceIdExist($accountDetail['reference_id'], 'deposit') == false) {
                 $depositId = $this->WalletModel->deposit($accountDetail, $data);
                 $this->statusCode = 200;
-                return $this->generateResponseBody(1, ['deposit' => $this->responseDeposit($data, $depositId)]);
+                return $this->generateResponseBody(1, ['deposit' => $this->responseDeposit($accountDetail, $depositId)]);
             }
             return $this->generateResponseBody(0, ['error' => 'reference id was ever used!']);
         }

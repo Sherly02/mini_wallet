@@ -21,7 +21,7 @@ class WalletModel extends CI_Model
     {
         $this->db->select('id, owned_by customer_xid')
             ->where('owned_by', $cxid);
-
+        
         return $this->db->get('m_account')->result_array(0) ?? null;
     }
 
@@ -54,7 +54,6 @@ class WalletModel extends CI_Model
     public function deposit($data, $tokenData)
     {
         $this->db->trans_begin();
-
         $depositData = $this->assertDeposit($data);
         $trxData     = $this->assertTrx($data, $tokenData, 'deposit');
 
@@ -62,7 +61,7 @@ class WalletModel extends CI_Model
             $this->updateBalance($data, $tokenData);
             $this->insertTrx($trxData);
             $this->db->trans_commit();
-            return $depositData['id'];
+            return $data['id_deposit'];
         }
 
         return false;
@@ -79,13 +78,13 @@ class WalletModel extends CI_Model
             $this->updateBalance($data, $tokenData);
             $this->insertTrx($trxData);
             $this->db->trans_commit();
-            return $withdrawalData['id'];
+            return $data['id_withdrawal'];
         }
 
         return false;
     }
 
-    public function getDepositById()
+    public function getDepositById($data, $depositId)
     {
         $select = [
             'deposit.id',
@@ -98,12 +97,14 @@ class WalletModel extends CI_Model
 
         $this->db->select($select)
                 ->from('mt_deposit deposit')
-                ->join('m_account account','account.id = deposit.deposited_by');
+                ->join('m_account account','account.id = deposit.deposited_by')
+                ->where('deposit.id', $depositId)
+                ->where('reference_id', $data['reference_id']);
         
         return $this->db->get()->result_array()[0] ?? [];
     }
 
-    public function getWithdrawalById()
+    public function getWithdrawalById($data, $withdrawalId)
     {
         $select = [
             'withdrawal.id',
@@ -116,7 +117,9 @@ class WalletModel extends CI_Model
 
         $this->db->select($select)
                 ->from('mt_withdraw withdrawal')
-                ->join('m_account account','account.id = withdrawal.withdrawn_by');
+                ->join('m_account account','account.id = withdrawal.withdrawn_by')
+                ->where('withdrawal.id', $withdrawalId)
+                ->where('reference_id', $data['reference_id']);
         
         return $this->db->get()->result_array()[0] ?? [];
     }
@@ -133,7 +136,7 @@ class WalletModel extends CI_Model
         ];
         $this->db->select($select)
             ->from('trx_wallet')
-            ->where('action_by', $data['customer_xid'])
+            ->where('action_by', $data['customer_xid'] ?? $data['owned_by'])
             ->order_by('transaction_date', 'DESC');
 
         return $this->db->get()->result_array();
@@ -225,7 +228,7 @@ class WalletModel extends CI_Model
     {
         $this->db->select('id, owned_by')
             ->where('id', $data['id'])
-            ->where('owned_by', $data['customer_xid']);
+            ->where('owned_by', $data['customer_xid'] ?? $data['owned_by']);
 
         return !empty($this->db->get('m_account')->result_array()) ? true : false;
     }
@@ -253,10 +256,9 @@ class WalletModel extends CI_Model
     {
         $this->db->select('status')
             ->where('id', $data['id'])
-            ->where('owned_by', $data['customer_xid']);
+            ->where('owned_by', $data['customer_xid'] ?? $data['owned_by']);
 
         $data = (array)$this->db->get('m_account')->row();
-
         return $data['status'] == 1 ? true : false;
     }
 
