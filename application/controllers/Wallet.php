@@ -313,8 +313,8 @@ class Wallet extends REST_Controller
                 'id' => $accountDetail['id'],
                 'owned_by' => $accountDetail['owned_by'],
                 'status' => $accountDetail['status'] == 1 ? 'enabled' : 'disabled',
-                'enabled_at' => date(FORMAT_DATE, strtotime($accountDetail['enabled_at'])),
-                'disabled_at' => date(FORMAT_DATE, strtotime($accountDetail['disabled_at'])),
+                'enabled_at' => isset($accountDetail['enabled_at']) ? date(FORMAT_DATE, strtotime($accountDetail['enabled_at'])) : NULL,
+                'disabled_at' => isset($accountDetail['disabled_at']) ? date(FORMAT_DATE, strtotime($accountDetail['disabled_at'])) : NULL,
                 'balance' => $accountDetail['balance']
             ];
 

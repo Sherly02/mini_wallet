@@ -21,7 +21,7 @@ class Auth {
             return $content;
         }
 
-        return (array)$content[0];
+        return array_key_exists(0, (array)$content) ? (array)$content[0] : (array)$content;
     }
 
     public function decodeToken($token)
@@ -29,6 +29,9 @@ class Auth {
         $jwt = new JWT();
         $jwtSecretKey = 'SecretKeyJWT';
         $decodedToken = $jwt->decode($token, $jwtSecretKey, false);
+        if (array_key_exists('owned_by', (array)$decodedToken)){
+            $decodedToken->customer_xid = $decodedToken->owned_by;
+        }
         return (array)$decodedToken;
     }
 
