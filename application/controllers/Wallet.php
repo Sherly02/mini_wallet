@@ -51,6 +51,24 @@ class Wallet extends REST_Controller
         return $this->response($result, $this->statusCode);
     }
 
+    public function setupWallet()
+    {
+        if (!$this->input->post('is_disabled')) {
+            return $this->response($this->generateResponseBody(0, ['error' => 'Missing is_disabled parameter!']), 400);
+        } else {
+            $isDisabled = $this->input->post('is_disabled') === 'true' ? true : false;
+            if ($isDisabled) {
+                $this->disableWallet();
+            } else {
+                if ($this->input->post('is_disabled') === 'false') {
+                    $this->enableWallet();
+                } else {
+                    return $this->response($this->generateResponseBody(0, ['error' => 'Set is_disabled parameter to boolean!']), 400);
+                }
+            }
+        }
+    }
+
     public function disableWallet()
     {
         if (is_null($this->input->get_request_header('Authorization'))){
