@@ -38,6 +38,9 @@ class Wallet extends REST_Controller
 
     public function enableWallet()
     {
+        if (is_null($this->input->get_request_header('Authorization'))){
+            return $this->response($this->generateResponseBody(0, ['error' => 'Authorization not found!']), 401);
+        }
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
 
@@ -50,6 +53,9 @@ class Wallet extends REST_Controller
 
     public function disableWallet()
     {
+        if (is_null($this->input->get_request_header('Authorization'))){
+            return $this->response($this->generateResponseBody(0, ['error' => 'Authorization not found!']), 401);
+        }
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
 
@@ -75,6 +81,9 @@ class Wallet extends REST_Controller
 
     public function viewWallet()
     {
+        if (is_null($this->input->get_request_header('Authorization'))){
+            return $this->response($this->generateResponseBody(0, ['error' => 'Authorization not found!']), 401);
+        }
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
 
@@ -95,6 +104,9 @@ class Wallet extends REST_Controller
 
     public function deposit()
     {
+        if (is_null($this->input->get_request_header('Authorization'))){
+            return $this->response($this->generateResponseBody(0, ['error' => 'Authorization not found!']), 401);
+        }
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
 
@@ -119,6 +131,9 @@ class Wallet extends REST_Controller
 
     public function withdrawal()
     {
+        if (is_null($this->input->get_request_header('Authorization'))){
+            return $this->response($this->generateResponseBody(0, ['error' => 'Authorization not found!']), 401);
+        }
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
 
@@ -148,6 +163,9 @@ class Wallet extends REST_Controller
 
     public function getHistory()
     {
+        if (is_null($this->input->get_request_header('Authorization'))){
+            return $this->response($this->generateResponseBody(0, ['error' => 'Authorization not found!']), 401);
+        }
         $detailToken = $this->getTokenDetail();
         $result = $detailToken['result'];
 
@@ -296,10 +314,21 @@ class Wallet extends REST_Controller
 
     private function getTokenDetail()
     {
-        $data['header_token'] = $this->input->get_request_header('Authorization');
-        $data['data'] = $this->auth->getTokenContent($data['header_token']);
-        $data['is_valid_token'] = $this->isValidToken($data['data']);
-        $data['result'] = $this->generateResponseBody(0, $data['data']);
+        $countToken = count(explode(' ', $this->input->get_request_header('Authorization')));
+        if ($countToken === 2) {
+            $data['header_token'] = $this->input->get_request_header('Authorization');
+            $data['data'] = $this->auth->getTokenContent($data['header_token']);
+            $data['is_valid_token'] = $this->isValidToken($data['data']);
+            $data['result'] = $this->generateResponseBody(0, $data['data']);
+        } else {
+            $data['is_valid_token'] = false;
+            $data['result'] = $this->generateResponseBody(0, ['error' => 'Invalid token!']);
+        }
+
+        if (!$data['is_valid_token']) {
+            $this->statusCode = 401;
+        }
+        
         return $data;
     }
 
